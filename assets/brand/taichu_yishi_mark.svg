@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="太初易筮印章">
+  <rect width="512" height="512" rx="96" fill="#1b1511"/>
+  <rect x="50" y="50" width="412" height="412" rx="30" fill="#b94439" stroke="#d5aa61" stroke-width="18"/>
+  <path fill="#f5e2ae" d="M150 144h212v28H150zm-16 58h244v28H134zm38 59h148v28H172zm20 47h128v28H192zm-25 59h176v28H167zM139 261h28v134h-28zm202-59h28v134h-28zm-47 106h28v87h-28z"/>
+</svg>

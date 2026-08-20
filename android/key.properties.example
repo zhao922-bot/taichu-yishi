@@ -1,0 +1,4 @@
+storePassword=替换为keystore密码
+keyPassword=替换为key密码
+keyAlias=替换为key别名
+storeFile=替换为keystore绝对路径或相对于android目录的路径
