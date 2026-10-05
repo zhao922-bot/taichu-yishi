@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:cyber_yi/main.dart';
+import 'package:taichu_yishi/main.dart';
 
 void main() {
   testWidgets('renders the five-method divination interface', (tester) async {
