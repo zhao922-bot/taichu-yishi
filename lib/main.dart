@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -14,7 +15,12 @@ export 'ui_style.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final corpus = await SourceCorpus.load();
-  final preferences = await SharedPreferences.getInstance();
+  SharedPreferences? preferences;
+  try {
+    preferences = await SharedPreferences.getInstance();
+  } on Object catch (error, stackTrace) {
+    debugPrint('偏好初始化失败：$error\n$stackTrace');
+  }
   runApp(CyberYiApp(corpus: corpus, preferences: preferences));
 }
 
@@ -30,6 +36,7 @@ class CyberYiApp extends StatefulWidget {
 class _CyberYiAppState extends State<CyberYiApp> {
   late AppAppearance _appearance;
   CastingSession? _restoredSession;
+  Future<void> _pendingPersistence = Future<void>.value();
 
   @override
   void initState() {
@@ -46,25 +53,41 @@ class _CyberYiAppState extends State<CyberYiApp> {
           widget.corpus,
         );
       } on Object {
-        preferences?.remove(_sessionStorageKey);
+        unawaited(_persistSession(null));
       }
     }
   }
 
-  void _setAppearance(AppAppearance value) {
+  Future<void> _setAppearance(AppAppearance value) async {
     setState(() => _appearance = value);
-    widget.preferences?.setString(_appearanceStorageKey, value.storageKey);
+    await _persistPreference(_appearanceStorageKey, value.storageKey);
   }
 
-  void _persistSession(CastingSession? session) {
-    if (session == null || session.isComplete) {
-      widget.preferences?.remove(_sessionStorageKey);
-    } else {
-      widget.preferences?.setString(
-        _sessionStorageKey,
-        jsonEncode(session.toJson()),
-      );
-    }
+  Future<void> _persistSession(CastingSession? session) async {
+    // 入队时生成快照，避免排队期间会话继续变化。
+    final snapshot = session == null || session.isComplete
+        ? null
+        : jsonEncode(session.toJson());
+    await _persistPreference(_sessionStorageKey, snapshot);
+  }
+
+  Future<void> _persistPreference(String key, String? value) {
+    final operation = _pendingPersistence.then((_) async {
+      final preferences = widget.preferences;
+      if (preferences == null) return;
+      try {
+        final succeeded = value == null
+            ? await preferences.remove(key)
+            : await preferences.setString(key, value);
+        if (!succeeded) {
+          throw StateError('SharedPreferences 返回 false');
+        }
+      } on Object catch (error, stackTrace) {
+        debugPrint('持久化失败（$key）：$error\n$stackTrace');
+      }
+    });
+    _pendingPersistence = operation;
+    return operation;
   }
 
   ThemeData _theme(Brightness brightness) {
@@ -148,8 +171,8 @@ class _CyberYiAppState extends State<CyberYiApp> {
       corpus: widget.corpus,
       initialSession: _restoredSession,
       appearance: _appearance,
-      onAppearanceChanged: _setAppearance,
-      onSessionChanged: _persistSession,
+      onAppearanceChanged: (value) => unawaited(_setAppearance(value)),
+      onSessionChanged: (session) => unawaited(_persistSession(session)),
     ),
   );
 }

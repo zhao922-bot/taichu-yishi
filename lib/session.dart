@@ -49,6 +49,17 @@ extension HandLabel on Hand {
   String get label => this == Hand.left ? '左手' : '右手';
 }
 
+/// 自动揲蓍先等概率选模四余数，再等概率选该余数下的合法左堆。
+int sampleTraditionalLeftPile(int total, Random random) {
+  if (total < 5) {
+    throw ArgumentError.value(total, 'total', '至少五策才能包含全部四种余数。');
+  }
+  final remainder = random.nextInt(4);
+  final first = remainder == 0 ? 4 : remainder;
+  final count = (total - 1 - first) ~/ 4 + 1;
+  return first + 4 * random.nextInt(count);
+}
+
 class DivinationEngine {
   DivinationEngine(this._corpus);
 
@@ -160,7 +171,49 @@ class CastingSession {
         (hexagram) => hexagram.number == directHex,
       );
     }
+    session._validateRestoredState();
     return session;
+  }
+
+  void _validateRestoredState() {
+    final steps = methodStepsCompleted;
+    final maxSteps = totalSteps - 1;
+    // 存档只保存未完成会话，不保存 result；满步骤存档不能继续起筮。
+    if (steps > maxSteps ||
+        (result != null) != (steps == maxSteps) ||
+        (!isPrepared && steps != 0)) {
+      throw const FormatException('起筮步骤数与准备或结果状态不一致。');
+    }
+    if (method == DivinationMethod.traditional) {
+      final allowedRemaining = switch (_traditionalChange) {
+        0 => const [49],
+        1 => const [40, 44],
+        2 => const [32, 36, 40],
+        _ => const <int>[],
+      };
+      if (_traditionalValues.length != steps ~/ 3 ||
+          _traditionalValues.any((value) => value < 6 || value > 9) ||
+          _traditionalChange != steps % 3 ||
+          !allowedRemaining.contains(_traditionalRemaining)) {
+        throw const FormatException('传统筮法爻值、变数或剩余策数不一致。');
+      }
+    } else if (_traditionalValues.isNotEmpty ||
+        _traditionalChange != 0 ||
+        _traditionalRemaining != 49) {
+      throw const FormatException('非传统筮法含有传统筮法进度。');
+    }
+    final usesTrigrams =
+        method == DivinationMethod.lueShi ||
+        method == DivinationMethod.eightSix;
+    bool validTrigram(int? value, bool expected) =>
+        expected ? value != null && value >= 1 && value <= 8 : value == null;
+    if (!validTrigram(_upper, usesTrigrams && steps >= 1) ||
+        !validTrigram(_lower, usesTrigrams && steps >= 2) ||
+        _moving != null ||
+        (_directHex != null) !=
+            (method == DivinationMethod.sixtyFourSix && steps == 1)) {
+      throw const FormatException('卦象或动爻与起筮步骤不一致。');
+    }
   }
 
   int get traditionalRemaining => _traditionalRemaining;
@@ -244,14 +297,17 @@ class CastingSession {
   }
 
   void _advanceTraditional(int? leftPile) {
-    final left = leftPile ?? _random.nextInt(_traditionalRemaining - 1) + 1;
+    final left =
+        leftPile ?? sampleTraditionalLeftPile(_traditionalRemaining, _random);
     if (left < 1 || left >= _traditionalRemaining) {
       throw ArgumentError.value(left, 'leftPile', '分堆必须使左右两手各至少有一策。');
     }
     final right = _traditionalRemaining - left;
     final leftRemainder = left % 4 == 0 ? 4 : left % 4;
     final rightAfterOne = right - 1;
-    final rightRemainder = rightAfterOne % 4 == 0 ? 4 : rightAfterOne % 4;
+    final rightRemainder = rightAfterOne == 0
+        ? 0
+        : (rightAfterOne % 4 == 0 ? 4 : rightAfterOne % 4);
     final removed = 1 + leftRemainder + rightRemainder;
     final next = _traditionalRemaining - removed;
     final line = traditionalLine;
@@ -291,7 +347,7 @@ class CastingSession {
       CastingStep(
         '${lineName(line)} · 第 $change 变',
         '本变左 $left、右 $right；右手取一后，左右各以四数归余，归余 $removed 策，余 $next 策。',
-        '第 $change 变只记录归余与剩余策数；还需继续两变，才能得到一个爻。',
+        '第 $change 变只记录归余与剩余策数；还需继续 ${3 - change} 变，才能得到一个爻。',
       ),
     );
     _traditionalRemaining = next;

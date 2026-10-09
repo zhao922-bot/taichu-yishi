@@ -471,10 +471,16 @@ class LueShiPileCard extends StatefulWidget {
 
 class _LueShiPileCardState extends State<LueShiPileCard> {
   final Random _random = Random.secure();
-  var _leftPile = 24;
+  late int _leftPile;
   late var _mode = widget.initialMode;
 
   bool get _hasTwoPiles => _leftPile > 0 && _leftPile < 49;
+
+  @override
+  void initState() {
+    super.initState();
+    _leftPile = _mode == SplitMode.automatic ? _random.nextInt(48) + 1 : 24;
+  }
 
   void _setMode(SplitMode mode) {
     widget.onModeChanged(mode);
@@ -548,7 +554,7 @@ class _LueShiPileCardState extends State<LueShiPileCard> {
                           constraints.maxWidth,
                         )
                       : null,
-                  onTapDown: _mode == SplitMode.manual
+                  onTapUp: _mode == SplitMode.manual
                       ? (details) => _setFromPosition(
                           details.localPosition.dx,
                           constraints.maxWidth,
@@ -954,7 +960,8 @@ class _TraditionalYarrowCardState extends State<TraditionalYarrowCard> {
   bool get _hasTwoPiles =>
       _leftPile > 0 && _leftPile < widget.session.traditionalRemaining;
 
-  int _randomPile(int remaining) => _random.nextInt(remaining - 1) + 1;
+  int _randomPile(int remaining) =>
+      sampleTraditionalLeftPile(remaining, _random);
 
   void _setMode(SplitMode mode) {
     widget.onModeChanged(mode);
@@ -1039,7 +1046,7 @@ class _TraditionalYarrowCardState extends State<TraditionalYarrowCard> {
                         constraints.maxWidth,
                       )
                     : null,
-                onTapDown: _mode == SplitMode.manual
+                onTapUp: _mode == SplitMode.manual
                     ? (details) => _setFromPosition(
                         details.localPosition.dx,
                         constraints.maxWidth,
