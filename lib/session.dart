@@ -246,10 +246,10 @@ class CastingSession {
         '第 2 步：请以${_handForCurrentStep()!.label}从八卦签中抽下卦。',
         '第 3 步：请以${_handForCurrentStep()!.label}从六爻签中抽动爻。',
       ][methodStepsCompleted],
-      DivinationMethod.sixtyFourSix => [
-        '第 1 步：从 64 卦签中抽取本卦。',
-        '第 2 步：请以${_handForCurrentStep()!.label}从六爻签中抽取动爻。',
-      ][methodStepsCompleted],
+      DivinationMethod.sixtyFourSix =>
+        methodStepsCompleted == 0
+            ? '第 1 步：从 64 卦签中抽取本卦。'
+            : '第 2 步：请以${_handForCurrentStep()!.label}从六爻签中抽取动爻。',
       DivinationMethod.threeEightyFour => '一步直抽：从 384 个“卦 × 爻”签位中抽取结果。',
     };
   }

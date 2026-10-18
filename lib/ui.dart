@@ -670,19 +670,33 @@ class SplitQuantityBar extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     children: [
       Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '左 $leftPile',
-            style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+          Expanded(
+            child: Text(
+              '左 $leftPile',
+              style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+            ),
           ),
-          Text(
-            '分签刻度 · 共 $total',
-            style: TextStyle(color: ritualMutedColor(context), fontSize: 12),
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                '分签刻度 · 共 $total',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: ritualMutedColor(context),
+                  fontSize: 12,
+                ),
+              ),
+            ),
           ),
-          Text(
-            '右 ${total - leftPile}',
-            style: TextStyle(color: kGold, fontWeight: FontWeight.w700),
+          Expanded(
+            child: Text(
+              '右 ${total - leftPile}',
+              textAlign: TextAlign.end,
+              style: TextStyle(color: kGold, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -1589,21 +1603,24 @@ class HexagramGlyph extends StatelessWidget {
 class _MethodNotes extends StatelessWidget {
   const _MethodNotes();
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-    child: const Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '使用说明',
-          style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
-        ),
-        SizedBox(height: 12),
-        Text('本筮、中筮、略筮按筮竹“变数”区分。本应用收录传统本筮、49 签略筮与抽签简法；中筮法因书中未载完整操作，暂不单列入口。'),
-        SizedBox(height: 10),
-        Text('八卦签、64 卦签、384 爻签为高岛晚年所用的直接抽签简法。自动分签仅在本机完成，不上传占问内容或起筮记录。'),
-      ],
+  Widget build(BuildContext context) => SafeArea(
+    top: false,
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      child: const Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '使用说明',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: 12),
+          Text('本筮、中筮、略筮按筮竹“变数”区分。本应用收录传统本筮、49 签略筮与抽签简法；中筮法因书中未载完整操作，暂不单列入口。'),
+          SizedBox(height: 10),
+          Text('八卦签、64 卦签、384 爻签为高岛晚年所用的直接抽签简法。自动分签仅在本机完成，不上传占问内容或起筮记录。'),
+        ],
+      ),
     ),
   );
 }

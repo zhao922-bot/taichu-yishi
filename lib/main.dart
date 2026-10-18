@@ -41,11 +41,10 @@ class _CyberYiAppState extends State<CyberYiApp> {
   @override
   void initState() {
     super.initState();
-    final preferences = widget.preferences;
     _appearance = AppAppearanceStorage.fromStorage(
-      preferences?.getString(_appearanceStorageKey),
+      _readPreference(_appearanceStorageKey),
     );
-    final rawSession = preferences?.getString(_sessionStorageKey);
+    final rawSession = _readPreference(_sessionStorageKey);
     if (rawSession != null) {
       try {
         _restoredSession = CastingSession.fromJson(
@@ -55,6 +54,16 @@ class _CyberYiAppState extends State<CyberYiApp> {
       } on Object {
         unawaited(_persistSession(null));
       }
+    }
+  }
+
+  String? _readPreference(String key) {
+    try {
+      return widget.preferences?.getString(key);
+    } on Object catch (error, stackTrace) {
+      debugPrint('偏好读取失败（$key）：$error\n$stackTrace');
+      unawaited(_persistPreference(key, null));
+      return null;
     }
   }
 
