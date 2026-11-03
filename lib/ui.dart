@@ -1502,8 +1502,12 @@ class ResultCard extends StatelessWidget {
                 final reading = result.source.lines[line];
                 return _ResultBlock(
                   title: '${lineName(line)}《占断》',
-                  value:
-                      '${reading?.title ?? ''}\n${reading?.divination ?? '此爻暂未收录占断内容。'}',
+                  child: reading == null
+                      ? const Text(
+                          '此爻暂未收录占断内容。',
+                          style: TextStyle(height: 1.55),
+                        )
+                      : _DivinationReading(reading: reading),
                 );
               }),
             if (changed != null)
@@ -1544,10 +1548,91 @@ class ResultCard extends StatelessWidget {
   }
 }
 
+@immutable
+class DivinationQuestion {
+  const DivinationQuestion({required this.marker, required this.text});
+
+  final String marker;
+  final String text;
+}
+
+List<DivinationQuestion> parseDivinationQuestions(String source) {
+  final questions = <DivinationQuestion>[];
+  for (final segment in source.split('○')) {
+    var text = segment.trim().replaceFirst(RegExp(r'^【占】\s*'), '');
+    if (questions.isEmpty) {
+      text = text.replaceFirst(RegExp(r'^[：:]\s*'), '');
+    }
+    if (text.isEmpty) continue;
+    questions.add(
+      DivinationQuestion(marker: questions.isEmpty ? '占' : '○', text: text),
+    );
+  }
+  return questions;
+}
+
+class _DivinationReading extends StatelessWidget {
+  const _DivinationReading({required this.reading});
+
+  final SourceLine reading;
+
+  @override
+  Widget build(BuildContext context) {
+    final questions = parseDivinationQuestions(reading.divination);
+    if (questions.isEmpty) {
+      return const Text('此爻暂未收录占断内容。', style: TextStyle(height: 1.55));
+    }
+    final accent = adaptiveAccent(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (reading.title.isNotEmpty) ...[
+          Text(reading.title, style: const TextStyle(height: 1.55)),
+          const SizedBox(height: 8),
+        ],
+        for (var index = 0; index < questions.length; index++)
+          Padding(
+            padding: EdgeInsets.only(top: index == 0 ? 0 : 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    questions[index].marker,
+                    key: ValueKey('divination-marker-${reading.title}-$index'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: index == 0 ? kVermilion : accent,
+                      fontWeight: index == 0
+                          ? FontWeight.w700
+                          : FontWeight.w400,
+                      height: 1.55,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    questions[index].text,
+                    style: const TextStyle(height: 1.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _ResultBlock extends StatelessWidget {
-  const _ResultBlock({required this.title, required this.value});
+  const _ResultBlock({required this.title, this.value, this.child})
+    : assert((value == null) != (child == null));
+
   final String title;
-  final String value;
+  final String? value;
+  final Widget? child;
+
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
@@ -1562,7 +1647,7 @@ class _ResultBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(height: 1.55)),
+        child ?? Text(value!, style: const TextStyle(height: 1.55)),
       ],
     ),
   );
